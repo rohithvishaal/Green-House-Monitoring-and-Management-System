@@ -121,6 +121,12 @@ boolean manualOverride = false;
 // first status
 boolean initialStatus = true;
 
+
+// function declarations
+void waterPump(int state);
+
+
+
 void connectToWifi(){
     Serial.println("--> Connecting to Wi-Fi...");
     WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
@@ -510,12 +516,12 @@ void waterPump(int state){
   if(state){
     Serial.println("--> MOTOR ON");
     sendStatusFeedback("MOTOR ON",2);
-    mqttClient.publish(MQTT_SUB_MOTOR_SWITCH, 1, true, String("true").c_str());
+    mqttClient.publish(MQTT_SUB_WATER_PUMP_SWITCH, 1, true, String("true").c_str());
   }
   else{
     Serial.println("--> MOTOR OFF");
     sendStatusFeedback("MOTOR OFF",2);
-    mqttClient.publish(MQTT_SUB_MOTOR_SWITCH, 1, true, String("false").c_str());
+    mqttClient.publish(MQTT_SUB_WATER_PUMP_SWITCH, 1, true, String("false").c_str());
   }
 }
 
@@ -524,12 +530,12 @@ void windows(int state){
   if(state){
     Serial.println("--> OPENING WINDOWS");
     sendStatusFeedback("OPENING WINDOWS",2);
-    mqttClient.publish(MQTT_PUB_WINDOW_SWITCH, 1, true, String("true").c_str());
+    mqttClient.publish(MQTT_SUB_WINDOW_SWITCH, 1, true, String("true").c_str());
   }
   else{
     Serial.println("--> CLOSING WINDOWS");
     sendStatusFeedback("CLOSING WINDOWS",2);
-    mqttClient.publish(MQTT_PUB_WINDOW_SWITCH, 1, true, String("false").c_str());
+    mqttClient.publish(MQTT_SUB_WINDOW_SWITCH, 1, true, String("false").c_str());
   }
   
 }
