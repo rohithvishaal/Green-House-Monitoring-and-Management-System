@@ -122,8 +122,6 @@ boolean manualOverride = false;
 boolean initialStatus = true;
 
 
-// function declarations
-void waterPump(int state);
 
 
 
