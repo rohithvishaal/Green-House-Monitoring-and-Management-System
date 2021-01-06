@@ -9,6 +9,8 @@ extern "C"{
 // For Temperature and Humidity
 #include <DHT.h>
 
+// For Servo that is the window motor
+#include <ESP32Servo.h>
 
 
 // WiFi configuration
@@ -30,7 +32,7 @@ extern "C"{
 // Setting up authentication for mosquitto broker
 // https://medium.com/@eranda/setting-up-authentication-on-mosquitto-mqtt-broker-de5df2e29afc
 #define MQTT_USERNAME "rohvis"
-#define MQTT_PASS "incorrect@007"
+#define MQTT_PASS "incorrect007"
 
 
 // MQTT Topics
@@ -68,16 +70,16 @@ extern "C"{
 
 // Board : https://circuits4you.com/2018/12/31/esp32-devkit-esp32-wroom-gpio-pinout/
 // Pin Configuration for Sensors
-#define DHTPIN       13
-#define SOILMOISTURE 12
+#define DHTPIN       12
+#define SOILMOISTURE 35
 #define PH           17
-#define LDR1         26
-#define LDR2         25
+#define LDR1         32
+#define LDR2         33
 
 
 // Pin Configuration for actuators
-#define WATERPUMP    34
-#define WINDOW_MOTOR 27
+#define WATERPUMP    5
+#define WINDOW_MOTOR 34
 
 #define DHTTYPE DHT11
 // create a dht object
@@ -120,6 +122,9 @@ boolean manualOverride = false;
 
 // first status
 boolean initialStatus = true;
+
+// Servo object for the window switch
+Servo windowMotor;
 
 
 
@@ -292,9 +297,11 @@ void onMqttMessage(char* topic, char* payload, AsyncMqttClientMessageProperties 
        if(String(topic)==MQTT_SUB_WATER_PUMP_SWITCH){
           if(value[0]=='t' && manualOverride){
             sendStatusFeedback("Turning on water pump",2);
+            waterPump(true);
           }
           else if(value[0]=='f' && manualOverride){
             sendStatusFeedback("Turning off water pump",2);
+            waterPump(false);
           }
           else{
             sendStatusFeedback("Cannot execute action! Manual Override OFF!",1);
@@ -304,9 +311,11 @@ void onMqttMessage(char* topic, char* payload, AsyncMqttClientMessageProperties 
          if(String(topic)==MQTT_SUB_WINDOW_SWITCH){
           if(value[0]=='t' && manualOverride){
             sendStatusFeedback("Opening windows",2);
+            windows(true);
           }
           else if(value[0]=='f' && manualOverride){
             sendStatusFeedback("Closing windows",2);
+            windows(false);
           }
           else{
             sendStatusFeedback("Cannot execute action! Manual Override OFF!",1);
@@ -338,18 +347,38 @@ void getSensorData(boolean randomMode){
     
   }
   else{
+    delay(500);
     temperature = dht.readTemperature();
     delay(500);
+    Serial.printf("Temp:%d\n",temperature);
+    
     humidity = dht.readHumidity();
     delay(500);
+    Serial.printf("Humidity:%d\n",humidity);
+    
     if (isnan(temperature) || isnan(humidity)) 
         Serial.println(F("--> Failed to read from DHT sensor!"));
+    
+    int ldrOneRead = analogRead(LDR1);
+    delay(500);
+    ldrOne = 100 - map(ldrOneRead, 0, 4095, 1, 100);
+    delay(500);
+    Serial.printf("LDR ONE:%d\n",ldrOne);
+    
+    int ldrTwoRead = analogRead(LDR2);
+    delay(500);
+    ldrTwo = 100 - map(ldrTwoRead, 0, 4095, 1, 100);
+    delay(500);
+    Serial.printf("LDR TWO:%d\n",ldrTwo);
+    
+    
+    int soilRead = analogRead(SOILMOISTURE);
+    soilMoisture = 100 - map(soilRead, 0, 4095, 1, 100);
+    delay(500);
+    Serial.printf("Soil Moisture:%d\n",soilMoisture);
+  
     pH = random(4,15);
-    ldrOne = 100 - map(analogRead(LDR1), 0, 4095, 1, 100);
-    delay(1000);
-    ldrTwo = 100 - map(analogRead(LDR2), 0, 4095, 1, 100);
-    delay(1000);
-    soilMoisture = 100 - map(analogRead(SOILMOISTURE), 0, 4095, 1, 100);
+    Serial.printf("pH:%d\n",pH);
     
   }
 }
@@ -446,9 +475,15 @@ delay(5000);
 
 void setup()
 {
-   
+    pinMode(WATERPUMP,OUTPUT);
+    pinMode(LDR1,INPUT);
+    pinMode(WINDOW_MOTOR, OUTPUT);
     // Initialize the Serial Monitor with a baud rate
     Serial.begin(115200);
+    
+    // Attach the pin to the servo object
+    windowMotor.attach(WINDOW_MOTOR);
+    
     // Initialize the DHT Sensor
     dht.begin();
     // if analog input pin 11 is unconnected, random analog
@@ -486,26 +521,31 @@ void loop() {
         //Save the last time a new message was sent.
         previousMillis = currentMillis;
         getSensorData(true);
+        Serial.printf("--> publishing temperature\n");
         mqttClient.publish(MQTT_PUB_TEMP, 1, true, String(temperature).c_str()); 
         delay(1000);
-        Serial.printf(" Temperature: %.2f \n", temperature);
+
+        Serial.printf("--> publishing humidity\n");
         mqttClient.publish(MQTT_PUB_HUM, 1, true, String(humidity).c_str()); 
         delay(1000);
-        Serial.printf(" Humidity: %.2f \n", humidity);
+
+        Serial.printf("--> publishing soil moisture\n");
         mqttClient.publish(MQTT_PUB_SOIL_MOISTURE, 1, true, String(soilMoisture).c_str());
         delay(1000);
-        Serial.printf(" Soil Moisture: %.2f \n", soilMoisture);
+
+        Serial.printf("--> publishing ldr one\n");
         mqttClient.publish(MQTT_PUB_LDR1, 1, true, String(ldrOne).c_str()); 
         delay(1000);
-        Serial.printf(" LDR ONE: %d \n", ldrOne);
+
+        Serial.printf("--> publishing ldr two\n");
         mqttClient.publish(MQTT_PUB_LDR2, 1, true, String(ldrTwo).c_str());
         delay(1000);                           
-        Serial.printf(" LDR TWO: %d \n", ldrTwo);
+
+        Serial.printf("--> publishing pH\n");
         mqttClient.publish(MQTT_PUB_PH_LEVEL, 1, true, String(pH).c_str());
         delay(1000);                            
-        Serial.printf(" pH: %.2f \n", pH); 
 }
-delay(5000);
+delay(3000);
 thresholdChecks();
 }
 
@@ -513,13 +553,14 @@ thresholdChecks();
 void waterPump(int state){
   if(state){
     Serial.println("--> MOTOR ON");
+    digitalWrite(WATERPUMP,HIGH);
     sendStatusFeedback("MOTOR ON",2);
-    mqttClient.publish(MQTT_SUB_WATER_PUMP_SWITCH, 1, true, String("true").c_str());
   }
   else{
     Serial.println("--> MOTOR OFF");
+    digitalWrite(WATERPUMP,LOW);
     sendStatusFeedback("MOTOR OFF",2);
-    mqttClient.publish(MQTT_SUB_WATER_PUMP_SWITCH, 1, true, String("false").c_str());
+   
   }
 }
 
@@ -527,13 +568,15 @@ void waterPump(int state){
 void windows(int state){
   if(state){
     Serial.println("--> OPENING WINDOWS");
+    windowMotor.write(180);
     sendStatusFeedback("OPENING WINDOWS",2);
-    mqttClient.publish(MQTT_SUB_WINDOW_SWITCH, 1, true, String("true").c_str());
+    
   }
   else{
     Serial.println("--> CLOSING WINDOWS");
+    windowMotor.write(0);
     sendStatusFeedback("CLOSING WINDOWS",2);
-    mqttClient.publish(MQTT_SUB_WINDOW_SWITCH, 1, true, String("false").c_str());
+   
   }
   
 }
