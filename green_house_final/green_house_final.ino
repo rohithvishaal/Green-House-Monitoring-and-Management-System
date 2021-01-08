@@ -498,7 +498,7 @@ void thresholdChecks() {
     Serial.println("[INFO] -- Soil Moisture  in safe levels!");
     sendStatusFeedback("soil Moisture in safe levels!", 1);
     delay(500);
-    if(soilSafeState) waterPump(false);
+    if(soilSafeState && (!manualOverride)) waterPump(false);
   }
   if (pH < pHLowThreshold ) {
     Serial.println("[ALERT] -- pH below Lower threshold!");
