@@ -136,9 +136,6 @@ boolean initialStatus = true;
 Servo windowMotor;
 
 
-
-
-
 void connectToWifi() {
   Serial.println("[ACTION] -- Connecting to Wi-Fi...");
   WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
@@ -204,9 +201,6 @@ void onMqttConnect(bool sessionPresent) {
   uint16_t packetIdSub14 = mqttClient.subscribe(MQTT_SUB_WATER_PUMP_SWITCH, 1);
 
   uint16_t packetIdSub15 = mqttClient.subscribe(MQTT_SUB_WINDOW_SWITCH, 1);
-
-
-
 }
 
 
@@ -226,7 +220,6 @@ void onMqttSubscribe(uint16_t packetId, uint8_t qos) {
   Serial.print(packetId);
   Serial.print("[INFO] QOS: ");
   Serial.println(qos);
-
 }
 
 
@@ -340,10 +333,6 @@ void onMqttMessage(char* topic, char* payload, AsyncMqttClientMessageProperties 
       sendStatusFeedback("Cannot execute action! Manual Override OFF!", 1);
     }
   }
-
-
-
-
 }
 void setSafeValues(){
   //ideal mid values
@@ -364,44 +353,30 @@ void getSensorData(boolean randomMode) {
     ldrOne = random(65, 100);
     ldrTwo = random(65, 100);
     soilMoisture = random(60, 96);
-
   }
   else {
     delay(500);
     temperature = dht.readTemperature();
     delay(500);
-
-
     humidity = dht.readHumidity();
     delay(500);
-
-
     if (isnan(temperature) || isnan(humidity))
       Serial.println(F("[ALERT] -- Failed to read from DHT sensor!"));
-
     int ldrOneRead = analogRead(LDR1);
     delay(500);
     ldrOne = map(ldrOneRead, 0, 4095, 1, 100);
     delay(500);
-
-
     int ldrTwoRead = analogRead(LDR2);
     delay(500);
     ldrTwo = map(ldrTwoRead, 0, 4095, 1, 100);
     delay(500);
-
-
-
     int soilRead = analogRead(SOILMOISTURE);
     soilMoisture = 100 - map(soilRead, 0, 4095, 1, 100);
     delay(500);
-
-
     pH = random(4, 15);
-
-
   }
 }
+
 
 void thresholdChecks() {
   if (initialStatus) {
@@ -556,7 +531,6 @@ void setup()
   mqttClient.setCredentials(MQTT_USERNAME, MQTT_PASS);
   connectToWifi();
   sendStatusFeedback("ALL OK!", 2);
-
 }
 
 void loop() {
@@ -616,7 +590,6 @@ void waterPump(int state) {
     digitalWrite(WATERPUMP, LOW);
     sendStatusFeedback("MOTOR OFF", 2);
     delay(2000);
-
   }
 }
 
@@ -628,7 +601,6 @@ void windows(int state) {
     windowMotor.write(180);
     sendStatusFeedback("OPENING WINDOWS", 2);
     delay(2000);
-
   }
   else {
     Serial.println("[ACTION] -- CLOSING WINDOWS");
@@ -636,9 +608,7 @@ void windows(int state) {
     windowMotor.write(0);
     sendStatusFeedback("CLOSING WINDOWS", 2);
     delay(2000);
-
   }
-
 }
 
 
