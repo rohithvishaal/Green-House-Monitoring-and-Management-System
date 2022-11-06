@@ -15,7 +15,7 @@ extern "C" {
 
 // WiFi configuration
 #define WIFI_SSID  "Router"
-#define WIFI_PASSWORD  "aishwarya@007"
+#define WIFI_PASSWORD  "*********"
 
 
 
