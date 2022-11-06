@@ -32,7 +32,7 @@ extern "C" {
 // Setting up authentication for mosquitto broker
 // https://medium.com/@eranda/setting-up-authentication-on-mosquitto-mqtt-broker-de5df2e29afc
 #define MQTT_USERNAME "rohvis"
-#define MQTT_PASS "incorrect007"
+#define MQTT_PASS "*********"
 
 
 // MQTT Topics
